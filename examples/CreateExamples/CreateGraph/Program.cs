@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using Algorithm;
+using Algorithm.Algorithm.ShortestPath;
 using Graph;
 
 var builder = new GraphBuilder<string, int>();
@@ -17,6 +18,6 @@ var fromDtoC = builder.CreateEdge(5, nodeD, nodeC);
 
 var graph = new Graph<string, int>([nodeA, nodeB, nodeC, nodeD]);
 
-var shortestSimplePath = ShortestPath.Dijkstra(graph, nodeA, nodeC, value => value);
+var shortestSimplePath = Dijkstra.ShortestPath(graph, nodeA, nodeC, value => value);
 
 Console.WriteLine(shortestSimplePath);

@@ -2,6 +2,9 @@
 
 using System.Globalization;
 using Algorithm;
+using Algorithm.Algorithm.ShortestPath;
+using Algorithm.Algorithm.Ssmtspp;
+using Algorithm.Model;
 using GTFS;
 using GtfsPlanner;
 
@@ -39,12 +42,12 @@ Console.WriteLine($"Number edges {edgesInSimpleGraph.Count()} {edgesInTemporalGr
 var wienHbf = simpleGraph.Nodes.First(node => node.Value.Name == "Wien Hauptbahnhof");
 var lienz = simpleGraph.Nodes.First(node => node.Value.Name == "Lienz Bahnhof");
 
-var simplePath = ShortestPath.Dijkstra(simpleGraph, wienHbf, lienz, i => i);
+var simplePath = Dijkstra.ShortestPath(simpleGraph, wienHbf, lienz, i => i);
 
 var wienHbfTemporal = temporalGraph.Nodes.First(node => node.Value.Name == "Wien Hauptbahnhof");
 var lienzTemporal = temporalGraph.Nodes.First(node => node.Value.Name == "Lienz Bahnhof");
 
-var temporalPaths = ShortestPath.FindSingleSourceMultiObjectiveTemporalShortestPaths(temporalGraph, wienHbfTemporal,
+var temporalPaths = Ssmtspp.FindSingleSourceMultiObjectiveTemporalShortestPaths(temporalGraph, wienHbfTemporal,
     lienzTemporal, new LatestDepartureObjective<(string, string), TimedEdge<string>>(null));
 
 Console.WriteLine($"{temporalPaths.Count} paths found.");

@@ -1,6 +1,6 @@
 using Graph;
 
-namespace Algorithm;
+namespace Algorithm.Algorithm.Ssmtspp;
 
 public interface IObjective<TSelf, TNode, TEdge>
 {

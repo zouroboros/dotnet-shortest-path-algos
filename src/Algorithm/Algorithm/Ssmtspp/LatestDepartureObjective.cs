@@ -1,6 +1,7 @@
+using Algorithm.Model;
 using Graph;
 
-namespace Algorithm;
+namespace Algorithm.Algorithm.Ssmtspp;
 
 public readonly record struct LatestDepartureObjective<TNode, TEdge>(DateTime? Departure)
     : IObjective<LatestDepartureObjective<TNode, TEdge>, TNode, TEdge>,

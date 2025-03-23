@@ -1,7 +1,8 @@
 using System.Collections;
+using Algorithm.Model;
 using Graph;
 
-namespace Algorithm;
+namespace Algorithm.Algorithm.Ssmtspp;
 
 public record DurationObjective<TNode, TEdge>(DateTime? InitialDeparture, TimeSpan? CurrentDuration)
     : IComparable<DurationObjective<TNode, TEdge>>, IObjective<DurationObjective<TNode, TEdge>, TNode, TEdge>

@@ -26,4 +26,8 @@
       <ProjectReference Include="..\Algorithm\Algorithm.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Algorithm\ShortestPath\" />
+    </ItemGroup>
+
 </Project>

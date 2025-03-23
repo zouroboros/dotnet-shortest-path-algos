@@ -1,6 +1,7 @@
+using Algorithm.Model;
 using Graph;
 
-namespace Algorithm;
+namespace Algorithm.Algorithm.Ssmtspp;
 
 /// <summary>
 /// 

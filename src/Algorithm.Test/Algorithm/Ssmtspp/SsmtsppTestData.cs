@@ -1,8 +1,10 @@
+using Algorithm.Algorithm.Ssmtspp;
+using Algorithm.Model;
 using Graph;
 
-namespace Algorithm.Test;
+namespace Algorithm.Test.Algorithm.Ssmtspp;
 
-public static class ShortestPathTestData
+public static class SsmtsppTestData
 {
     public static TheoryData<IGraph<string, TimedEdge<string>>, INode<string, TimedEdge<string>>, INode<string, TimedEdge<string>>,
             LatestDepartureObjective<string, TimedEdge<string>>,

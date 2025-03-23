@@ -1,16 +1,18 @@
+using Algorithm.Algorithm.Ssmtspp;
+using Algorithm.Model;
 using Graph;
 
-namespace Algorithm.Test;
+namespace Algorithm.Test.Algorithm.Ssmtspp;
 
-public class ShortestPathTest
+public class SsmtsppTest
 {
     [Theory]
-    [MemberData(nameof(ShortestPathTestData.FindSingleSourceMultiObjectiveTemporalShortestPaths), MemberType = typeof(ShortestPathTestData))]
+    [MemberData(nameof(SsmtsppTestData.FindSingleSourceMultiObjectiveTemporalShortestPaths), MemberType = typeof(SsmtsppTestData))]
     public void FindSingleSourceMultiObjectiveTemporalShortestPaths(
         IGraph<string, TimedEdge<string>> graph, INode<string, TimedEdge<string>> start, INode<string, TimedEdge<string>> end, LatestDepartureObjective<string, TimedEdge<string>> initialValue,
         IReadOnlyCollection<IReadOnlyCollection<IEdge<string, TimedEdge<string>>>> expectedPaths)
     {
-        var paths = ShortestPath.FindSingleSourceMultiObjectiveTemporalShortestPaths(graph, start, end, initialValue);
+        var paths = global::Algorithm.Algorithm.Ssmtspp.Ssmtspp.FindSingleSourceMultiObjectiveTemporalShortestPaths(graph, start, end, initialValue);
 
         Assert.Equal(expectedPaths, paths);
     }

@@ -1,4 +1,5 @@
 using Algorithm;
+using Algorithm.Model;
 using Graph;
 
 namespace GtfsPlanner;
