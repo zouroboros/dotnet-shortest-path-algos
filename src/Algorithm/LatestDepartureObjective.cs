@@ -8,6 +8,7 @@ public readonly record struct LatestDepartureObjective<TNode, TEdge>(DateTime? D
     where TEdge : ITimedEdge
 {
     public bool WeaklyDominates(LatestDepartureObjective<TNode, TEdge> other) => Departure >= other.Departure;
+    public bool Dominates(LatestDepartureObjective<TNode, TEdge> other) => Departure > other.Departure;
 
     public LatestDepartureObjective<TNode, TEdge> Add(IEdge<TNode, TEdge> edge)
     {

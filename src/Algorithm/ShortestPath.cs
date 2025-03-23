@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Graph;
 
 namespace Algorithm;
@@ -81,46 +82,63 @@ public static class ShortestPath
             permanentLabelsByNode[node] = new SortedSet<NodeLabel<TObjectives, TNode, TEdge>>();
         }
 
-        var initialLabel = new NodeLabel<TObjectives, TNode, TEdge>(DateTime.MinValue, initialValue, null, start, null);
+        var labelCount = 0;
+        
+        var initialLabel = new NodeLabel<TObjectives, TNode, TEdge>(DateTime.MinValue, initialValue, labelCount, null, start, null);
         temporaryLabelsByNode[start].Add(initialLabel);
         temporaryLabels.Add(initialLabel);
-
+        
         while (temporaryLabels.Count > 0)
         {
             var currentOptimalLabel = temporaryLabels.Min!;
             
-            temporaryLabels.Remove(currentOptimalLabel);
-            temporaryLabelsByNode[currentOptimalLabel.Node].Remove(currentOptimalLabel);
-            permanentLabelsByNode[currentOptimalLabel.Node].Add(currentOptimalLabel);
+            var wasRemoved = temporaryLabels.Remove(currentOptimalLabel);
+            Debug.Assert(wasRemoved);
+            wasRemoved = temporaryLabelsByNode[currentOptimalLabel.Node].Remove(currentOptimalLabel);
+            Debug.Assert(wasRemoved);
+            wasRemoved = permanentLabelsByNode[currentOptimalLabel.Node].Add(currentOptimalLabel);
+            Debug.Assert(wasRemoved);
             
             foreach (var edge in currentOptimalLabel.Node.Edges)
             {
                 if (ReferenceEquals(edge.NodeA, currentOptimalLabel.Node) && edge.Value.DepartureTime >= currentOptimalLabel.ArrivalTime)
                 {
-                    var nextNode = edge.NodeB;
-                    var newLabel = currentOptimalLabel.Add(edge);
+                    labelCount++;
+                    var newLabel = currentOptimalLabel.Add(edge, labelCount);
+                    var nextNode = newLabel.Node;
 
-                    var isDominated = temporaryLabelsByNode[nextNode].Concat(permanentLabelsByNode[nextNode]).Any(otherLabel => otherLabel.WeaklyDominates(newLabel));
+                    var isWeaklyDominated = temporaryLabelsByNode[nextNode].Concat(permanentLabelsByNode[nextNode]).Any(otherLabel => otherLabel.WeaklyDominates(newLabel));
 
-                    if (!isDominated)
+                    if (!isWeaklyDominated)
                     {
-                        var dominatedLabels = temporaryLabelsByNode[nextNode].Where(otherLabel => newLabel.WeaklyDominates(otherLabel) && !newLabel.Equals(otherLabel)).ToArray();
+                        var dominatedLabels = temporaryLabelsByNode[nextNode].Where(otherLabel => newLabel.Dominates(otherLabel)).ToArray();
 
                         foreach (var dominatedLabel in dominatedLabels)
                         {
-                            temporaryLabelsByNode[nextNode].Remove(dominatedLabel);
-                            temporaryLabels.Remove(dominatedLabel);
+                            wasRemoved = temporaryLabelsByNode[nextNode].Remove(dominatedLabel);
+                            Debug.Assert(wasRemoved);
+                            wasRemoved = temporaryLabels.Remove(dominatedLabel);
+                            Debug.Assert(wasRemoved);
                         }
                         
-                        temporaryLabelsByNode[nextNode].Add(newLabel);
-                        temporaryLabels.Add(newLabel);
+                        wasRemoved = temporaryLabelsByNode[nextNode].Add(newLabel);
+                        Debug.Assert(wasRemoved);
+                        wasRemoved = temporaryLabels.Add(newLabel);
+
+                        if (!wasRemoved)
+                        {
+                            temporaryLabels.TryGetValue(newLabel, out var value);
+                            Console.WriteLine(value);
+                        }
+                        
+                        Debug.Assert(wasRemoved);
                     }
                 }
             }
         }
 
         var finalLabels = permanentLabelsByNode[end];
-
+        
         var paths = new List<IReadOnlyList<IEdge<TNode, TEdge>>>();
 
         foreach (var finalLabel in finalLabels)

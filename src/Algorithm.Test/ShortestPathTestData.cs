@@ -5,14 +5,14 @@ namespace Algorithm.Test;
 public static class ShortestPathTestData
 {
     public static TheoryData<IGraph<string, TimedEdge<string>>, INode<string, TimedEdge<string>>, INode<string, TimedEdge<string>>,
-            TimeSpanObjective<string, TimedEdge<string>>,
+            LatestDepartureObjective<string, TimedEdge<string>>,
             IReadOnlyCollection<IReadOnlyCollection<IEdge<string, TimedEdge<string>>>>>
         FindSingleSourceMultiObjectiveTemporalShortestPaths()
     {
         var examples =
             new TheoryData<IGraph<string, TimedEdge<string>>, INode<string, TimedEdge<string>>,
                 INode<string, TimedEdge<string>>,
-                TimeSpanObjective<string, TimedEdge<string>>,
+                LatestDepartureObjective<string, TimedEdge<string>>,
                 IReadOnlyCollection<IReadOnlyCollection<IEdge<string, TimedEdge<string>>>>>();
         
         var graphBuilder = new GraphBuilder<string, TimedEdge<string>>();
@@ -23,7 +23,7 @@ public static class ShortestPathTestData
         var node2 = graphBuilder.CreateNode("Node 2");
 
         examples.Add(new Graph<string, TimedEdge<string>>([node1, node2]), node1, node2,
-            new TimeSpanObjective<string, TimedEdge<string>>(TimeSpan.Zero), []);
+            new LatestDepartureObjective<string, TimedEdge<string>>(null), []);
         
         // two nodes, one edge -> one result
         
@@ -36,7 +36,7 @@ public static class ShortestPathTestData
             node4);
         
         examples.Add(new Graph<string, TimedEdge<string>>([node3, node4]), node3, node4,
-            new TimeSpanObjective<string, TimedEdge<string>>(TimeSpan.Zero), [[edgeFrom3To4]]);
+            new LatestDepartureObjective<string, TimedEdge<string>>(null), [[edgeFrom3To4]]);
         
         // two nodes, one shorter edge and one longer, longer is later -> one result
         
@@ -54,7 +54,7 @@ public static class ShortestPathTestData
             node6);
 
         examples.Add(new Graph<string, TimedEdge<string>>([node5, node6]), node5, node6,
-            new TimeSpanObjective<string, TimedEdge<string>>(TimeSpan.Zero), [[firstEdgeFrom5To6]]);
+            new LatestDepartureObjective<string, TimedEdge<string>>(null), [[firstEdgeFrom5To6]]);
         
         // two nodes, one longer edge and shorter longer, longer is earlier -> two results
 
@@ -72,7 +72,7 @@ public static class ShortestPathTestData
             node8);
 
         examples.Add(new Graph<string, TimedEdge<string>>([node7, node8]), node7, node8,
-            new TimeSpanObjective<string, TimedEdge<string>>(TimeSpan.Zero), [[firstEdgeFrom7To8], [secondEdgeFrom7To8]]);
+            new LatestDepartureObjective<string, TimedEdge<string>>(null), [[firstEdgeFrom7To8], [secondEdgeFrom7To8]]);
         
         // three nodes no path -> no result
         
@@ -89,7 +89,7 @@ public static class ShortestPathTestData
             node11);
 
         examples.Add(new Graph<string, TimedEdge<string>>([node9, node10, node11]), node9, node11,
-            new TimeSpanObjective<string, TimedEdge<string>>(TimeSpan.Zero), []);
+            new LatestDepartureObjective<string, TimedEdge<string>>(null), []);
         
         // three nodes one path -> one result
         
@@ -106,7 +106,7 @@ public static class ShortestPathTestData
             node14);
 
         examples.Add(new Graph<string, TimedEdge<string>>([node12, node13, node14]), node12, node14,
-            new TimeSpanObjective<string, TimedEdge<string>>(TimeSpan.Zero), [[edgeFrom12To13, edgeFrom13To14]]);
+            new LatestDepartureObjective<string, TimedEdge<string>>(null), [[edgeFrom12To13, edgeFrom13To14]]);
         
         // three nodes one path, additional edges -> one result
         
@@ -131,7 +131,7 @@ public static class ShortestPathTestData
             node17);
 
         examples.Add(new Graph<string, TimedEdge<string>>([node15, node16, node17]), node15, node17,
-            new TimeSpanObjective<string, TimedEdge<string>>(TimeSpan.Zero), [[edgeFrom15To16, edgeFrom16To17]]);
+            new LatestDepartureObjective<string, TimedEdge<string>>(null), [[edgeFrom15To16, edgeFrom16To17]]);
         
         return examples;
     }

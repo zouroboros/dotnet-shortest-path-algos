@@ -16,10 +16,11 @@ namespace Algorithm;
 public record NodeLabel<TOtherObjectives, TNode, TEdge>(
     DateTime ArrivalTime,
     TOtherObjectives OtherObjectives,
+    int LabelNumber,
     IEdge<TNode, TEdge>? Edge,
     INode<TNode, TEdge> Node,
     NodeLabel<TOtherObjectives, TNode, TEdge>? PreviousLabel)
-    : IComparable<NodeLabel<TOtherObjectives, TNode, TEdge>>, IObjective<NodeLabel<TOtherObjectives, TNode, TEdge>, TNode, TEdge>
+    : IComparable<NodeLabel<TOtherObjectives, TNode, TEdge>>
     where TOtherObjectives : IComparable<TOtherObjectives>, IObjective<TOtherObjectives, TNode, TEdge>, IEquatable<TOtherObjectives>
     where TEdge : ITimedEdge, IEquatable<TEdge>
     where TNode : IEquatable<TNode>
@@ -32,7 +33,9 @@ public record NodeLabel<TOtherObjectives, TNode, TEdge>(
         if (arrivalTimeComparison != 0) return arrivalTimeComparison;
         var otherObjectivesComparison = OtherObjectives.CompareTo(other.OtherObjectives);
         if (otherObjectivesComparison != 0) return otherObjectivesComparison;
-        return Comparer<NodeLabel<TOtherObjectives, TNode, TEdge>?>.Default.Compare(PreviousLabel, other.PreviousLabel);
+        var labelNumberComparison = LabelNumber.CompareTo(other.LabelNumber);
+        if (labelNumberComparison != 0) return labelNumberComparison;
+        return 0;
     }
 
     public bool WeaklyDominates(NodeLabel<TOtherObjectives, TNode, TEdge> other)
@@ -46,7 +49,17 @@ public record NodeLabel<TOtherObjectives, TNode, TEdge>(
         return false;
     }
 
-    public NodeLabel<TOtherObjectives, TNode, TEdge> Add(IEdge<TNode, TEdge> edge) =>
-        new(edge.Value.ArrivalTime, OtherObjectives.Add(edge), edge,
+    public bool Dominates(NodeLabel<TOtherObjectives, TNode, TEdge> other)
+    {
+        if (ArrivalTime < other.ArrivalTime)
+        {
+            return OtherObjectives.Dominates(other.OtherObjectives);
+        }
+
+        return false;
+    }
+
+    public NodeLabel<TOtherObjectives, TNode, TEdge> Add(IEdge<TNode, TEdge> edge, int labelNumber) =>
+        new(edge.Value.ArrivalTime, OtherObjectives.Add(edge), labelNumber, edge,
             edge.NodeB, this);
 }

@@ -49,10 +49,7 @@ var temporalPaths = ShortestPath.FindSingleSourceMultiObjectiveTemporalShortestP
 
 Console.WriteLine($"{temporalPaths.Count} paths found.");
 
-foreach (var path in temporalPaths)
+foreach (var path in temporalPaths.OrderByDescending(path => path.Last().Value.ArrivalTime - path.First().Value.DepartureTime))
 {
-    Console.WriteLine();
-    Console.WriteLine(string.Join(Environment.NewLine,
-        path.Select(edge =>
-            $"{edge.NodeA.Value.Name,-40} ({edge.Value.DepartureTime.ToShortTimeString()}) {edge.Value.Value,-10} ({edge.Value.ArrivalTime.ToShortTimeString()}) {edge.NodeB.Value.Name,-40} ")));
+    Console.WriteLine(path.Last().Value.ArrivalTime - path.First().Value.DepartureTime);
 }
