@@ -1,58 +1,61 @@
-﻿// See https://aka.ms/new-console-template for more information
-
+﻿using System.CommandLine;
+using System.Diagnostics;
 using System.Globalization;
 using Algorithm;
-using Algorithm.Algorithm.ShortestPath;
-using Algorithm.Algorithm.Ssmtspp;
-using Algorithm.Model;
 using GTFS;
 using GtfsPlanner;
 
-Console.WriteLine($"Opening gtfs {args[0]}");
+var rootCommand = new RootCommand("GtsPlanner");
+var gtfsOption = new Option<FileInfo>("--gtfs", "Path to the GTFS file.");
+var dateOption = new Option<DateOnly>("--date", "Date on which to find a route");
+var startOption = new Option<string>("--start", "Name of the start of the route.");
+var endOption = new Option<string>("--dest", "Name of the destination of the route.");
 
-var reader = new GTFSReader<GTFSFeed>();
+rootCommand.Add(gtfsOption);
+rootCommand.Add(dateOption);
+rootCommand.Add(startOption);
+rootCommand.Add(endOption);
 
-reader.DateTimeReader = dateTimeString =>
+rootCommand.SetHandler((gtfsFile, date, start, destination) =>
 {
-    if (dateTimeString.Length == 10)
+    Console.WriteLine($"Opening gtfs {gtfsFile}");
+
+    var reader = new GTFSReader<GTFSFeed>
     {
-        return DateTime.ParseExact(dateTimeString[1..^1], "yyyyMMdd", CultureInfo.InvariantCulture);
-    }
+        DateTimeReader = dateTimeString =>
+        {
+            if (dateTimeString.Length == 10)
+            {
+                return DateTime.ParseExact(dateTimeString[1..^1], "yyyyMMdd", CultureInfo.InvariantCulture);
+            }
 
-    return DateTime.ParseExact(dateTimeString, "yyyyMMdd", CultureInfo.InvariantCulture);
-};
+            return DateTime.ParseExact(dateTimeString, "yyyyMMdd", CultureInfo.InvariantCulture);
+        }
+    };
 
-var feed = reader.Read(args[0]);
-var tripReader = new TripReader(feed);
+    var feed = reader.Read(gtfsFile.FullName);
+    var tripReader = new TripReader(feed);
+    
+    var trips = tripReader.ReadTrips(date).ToList();
 
-var date = DateOnly.FromDateTime(DateTime.Today);
+    Console.WriteLine($"Found {trips.Count} trips");
 
-var trips = tripReader.ReadTrips(date).ToList();
+    var temporalGraph = Graphs.CreateTemporalGraph(trips);
 
-Console.WriteLine($"Found {trips.Count} trips");
+    var edgesInTemporalGraph = temporalGraph.Nodes.SelectMany(node => node.Edges);
 
-var simpleGraph = Graphs.CreateSimpleGraph(trips);
-var temporalGraph = Graphs.CreateTemporalGraph(trips);
+    Console.WriteLine($"Number edges {edgesInTemporalGraph.Count()}");
 
-var edgesInSimpleGraph = simpleGraph.Nodes.SelectMany(node => node.Edges);
-var edgesInTemporalGraph = temporalGraph.Nodes.SelectMany(node => node.Edges);
+    var startNode = temporalGraph.Nodes.First(node => node.Value.Name == start);
+    var destinationNode = temporalGraph.Nodes.First(node => node.Value.Name == destination);
 
-Console.WriteLine($"Number edges {edgesInSimpleGraph.Count()} {edgesInTemporalGraph.Count()}");
+    var stopwatch = new Stopwatch();
+    stopwatch.Start();
+    var temporalPaths = PathFinder.FindShortestPaths(temporalGraph, startNode,
+        destinationNode);
+    stopwatch.Stop();
 
-var wienHbf = simpleGraph.Nodes.First(node => node.Value.Name == "Wien Hauptbahnhof");
-var lienz = simpleGraph.Nodes.First(node => node.Value.Name == "Lienz Bahnhof");
+    Console.WriteLine($"Found {temporalPaths.Count} paths and the calculation took {stopwatch.ElapsedMilliseconds}ms.");
+}, gtfsOption, dateOption, startOption, endOption);
 
-var simplePath = Dijkstra.ShortestPath(simpleGraph, wienHbf, lienz, i => i);
-
-var wienHbfTemporal = temporalGraph.Nodes.First(node => node.Value.Name == "Wien Hauptbahnhof");
-var lienzTemporal = temporalGraph.Nodes.First(node => node.Value.Name == "Lienz Bahnhof");
-
-var temporalPaths = Ssmtspp.FindSingleSourceMultiObjectiveTemporalShortestPaths(temporalGraph, wienHbfTemporal,
-    lienzTemporal, new LatestDepartureObjective<(string, string), TimedEdge<string>>(null));
-
-Console.WriteLine($"{temporalPaths.Count} paths found.");
-
-foreach (var path in temporalPaths.OrderByDescending(path => path.Last().Value.ArrivalTime - path.First().Value.DepartureTime))
-{
-    Console.WriteLine(path.Last().Value.ArrivalTime - path.First().Value.DepartureTime);
-}
+await rootCommand.InvokeAsync(args);
