@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Algorithm;
+using Graph;
 using GTFS;
 using GtfsPlanner;
 
@@ -37,15 +38,9 @@ rootCommand.SetHandler((gtfsFile, date, start, destination) =>
     var tripReader = new TripReader(feed);
     
     var trips = tripReader.ReadTrips(date).ToList();
-
-    Console.WriteLine($"Found {trips.Count} trips");
-
+    
     var temporalGraph = Graphs.CreateTemporalGraph(trips);
-
-    var edgesInTemporalGraph = temporalGraph.Nodes.SelectMany(node => node.Edges);
-
-    Console.WriteLine($"Number edges {edgesInTemporalGraph.Count()}");
-
+    
     var startNode = temporalGraph.Nodes.First(node => node.Value.Name == start);
     var destinationNode = temporalGraph.Nodes.First(node => node.Value.Name == destination);
 
@@ -56,6 +51,16 @@ rootCommand.SetHandler((gtfsFile, date, start, destination) =>
     stopwatch.Stop();
 
     Console.WriteLine($"Found {temporalPaths.Count} paths and the calculation took {stopwatch.ElapsedMilliseconds}ms.");
+
+    foreach (var temporalPath in temporalPaths)
+    {
+        var simplifiedPath = Paths.MergeConsecutiveEdgesOnSameTrain(temporalPath);
+        Console.WriteLine(
+            $"{simplifiedPath.First().Departure}, {simplifiedPath.First().DepartureTime}, {simplifiedPath.Last().Arrival}, {simplifiedPath.Last().ArrivalTime}, {simplifiedPath.Last().ArrivalTime - simplifiedPath.First().DepartureTime}, {string.Join(", ",
+                simplifiedPath.Select(transition =>
+                    $"{transition.Departure}, {transition.DepartureTime}, {transition.Name}, {transition.Arrival} {transition.ArrivalTime}"))}");
+    }
+    
 }, gtfsOption, dateOption, startOption, endOption);
 
 await rootCommand.InvokeAsync(args);
