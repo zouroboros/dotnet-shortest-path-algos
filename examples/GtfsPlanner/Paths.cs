@@ -6,8 +6,9 @@ namespace GtfsPlanner;
 
 public static class Paths
 {
-    private static (string Departure, DateTime DepartureTime, string Name, string Arrival, DateTime ArrivalTime) MergeEdges(
-        IEdge<(string, string), TimedEdge<string>> firstEdge, IEdge<(string, string), TimedEdge<string>> secondEdge)
+    private static (string Departure, DateTime DepartureTime, string Name, string Arrival, DateTime ArrivalTime)
+        MergeEdges(
+            IEdge<(string, string), TimedEdge<string>> firstEdge, IEdge<(string, string), TimedEdge<string>> secondEdge)
     {
         return (firstEdge.NodeA.Value.Item2, firstEdge.Value.DepartureTime, firstEdge.Value.Value,
             secondEdge.NodeB.Value.Item2, secondEdge.Value.ArrivalTime);
@@ -37,4 +38,12 @@ public static class Paths
 
         return newPath.Add(MergeEdges(lastEdge, currentEdge));
     }
+
+    public static IEnumerable<string>
+        SelectStationNames(IReadOnlyCollection<IEdge<(string Id, string Name), TimedEdge<string>>> path) => path
+        .Select(edge => edge.NodeA.Value.Name).Concat(path.Select(edge => edge.NodeB.Value.Name)).Distinct();
+
+    public static IEnumerable<string>
+        SelectViaNames(IReadOnlyCollection<IEdge<(string Id, string Name), TimedEdge<string>>> path) => path
+        .Select(edge => edge.Value.Value).Distinct();
 }

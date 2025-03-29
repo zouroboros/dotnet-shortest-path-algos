@@ -29,27 +29,12 @@ var latestDepartureAndEarliestArrival = new Command("LatestDepartureEarliestArri
 
 rootCommand.Add(latestDepartureAndEarliestArrival);
 
+var gtfsImporter = new GtfsImporter();
+var display = new Display();
+
 earliestArrival.SetHandler((gtfsFile, date, start, destination, startTime) =>
 {
-    var reader = new GTFSReader<GTFSFeed>
-    {
-        DateTimeReader = dateTimeString =>
-        {
-            if (dateTimeString.Length == 10)
-            {
-                return DateTime.ParseExact(dateTimeString[1..^1], "yyyyMMdd", CultureInfo.InvariantCulture);
-            }
-
-            return DateTime.ParseExact(dateTimeString, "yyyyMMdd", CultureInfo.InvariantCulture);
-        }
-    };
-
-    var feed = reader.Read(gtfsFile.FullName);
-    var tripReader = new TripReader(feed);
-
-    var trips = tripReader.ReadTrips(date).ToList();
-
-    var temporalGraph = Graphs.CreateTemporalGraph(trips);
+    var temporalGraph = gtfsImporter.ImportGraphFromGtfs(gtfsFile, date);
 
     var startNode = temporalGraph.Nodes.First(node => node.Value.Name == start);
     var destinationNode = temporalGraph.Nodes.First(node => node.Value.Name == destination);
@@ -60,40 +45,15 @@ earliestArrival.SetHandler((gtfsFile, date, start, destination, startTime) =>
         destinationNode, new DateTime(date, startTime));
     stopwatch.Stop();
 
-    Console.WriteLine($"Found path and the calculation took {stopwatch.ElapsedMilliseconds}ms.");
-
-    var simplifiedPath = Paths.MergeConsecutiveEdgesOnSameTrain(path);
+    display.DisplayCalculationTime(stopwatch.Elapsed);
+    display.DisplayPath(path);
     
-    foreach (var (departure, departureTime, via, arrival, arrivalTime) in simplifiedPath)
-    {
-        Console.WriteLine($"{departure,-40} ({departureTime:HH:mm}) {via,-10} ({arrivalTime:HH:mm}) {arrival,-40}");
-    }
     
 }, gtfsOption, dateOption, startOption, endOption, departureTimeOption);
 
 latestDepartureAndEarliestArrival.SetHandler((gtfsFile, date, start, destination) =>
 {
-    Console.WriteLine($"Opening gtfs {gtfsFile}");
-
-    var reader = new GTFSReader<GTFSFeed>
-    {
-        DateTimeReader = dateTimeString =>
-        {
-            if (dateTimeString.Length == 10)
-            {
-                return DateTime.ParseExact(dateTimeString[1..^1], "yyyyMMdd", CultureInfo.InvariantCulture);
-            }
-
-            return DateTime.ParseExact(dateTimeString, "yyyyMMdd", CultureInfo.InvariantCulture);
-        }
-    };
-
-    var feed = reader.Read(gtfsFile.FullName);
-    var tripReader = new TripReader(feed);
-    
-    var trips = tripReader.ReadTrips(date).ToList();
-    
-    var temporalGraph = Graphs.CreateTemporalGraph(trips);
+    var temporalGraph = gtfsImporter.ImportGraphFromGtfs(gtfsFile, date);
     
     var startNode = temporalGraph.Nodes.First(node => node.Value.Name == start);
     var destinationNode = temporalGraph.Nodes.First(node => node.Value.Name == destination);
@@ -104,16 +64,8 @@ latestDepartureAndEarliestArrival.SetHandler((gtfsFile, date, start, destination
         destinationNode);
     stopwatch.Stop();
 
-    Console.WriteLine($"Found {temporalPaths.Count} paths and the calculation took {stopwatch.ElapsedMilliseconds}ms.");
-
-    foreach (var temporalPath in temporalPaths)
-    {
-        var simplifiedPath = Paths.MergeConsecutiveEdgesOnSameTrain(temporalPath);
-        Console.WriteLine(
-            $"{simplifiedPath.First().Departure}, {simplifiedPath.First().DepartureTime}, {simplifiedPath.Last().Arrival}, {simplifiedPath.Last().ArrivalTime}, {simplifiedPath.Last().ArrivalTime - simplifiedPath.First().DepartureTime}, {string.Join(", ",
-                simplifiedPath.Select(transition =>
-                    $"{transition.Departure}, {transition.DepartureTime}, {transition.Name}, {transition.Arrival} {transition.ArrivalTime}"))}");
-    }
+    display.DisplayCalculationTimeAndNumberOfResults(stopwatch.Elapsed, temporalPaths.Count);
+    display.DisplayPaths(temporalPaths);
     
 }, gtfsOption, dateOption, startOption, endOption);
 
