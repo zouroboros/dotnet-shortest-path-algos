@@ -1,13 +1,17 @@
+using System.Numerics;
 using Graph;
 
 namespace Algorithm.Algorithm.ShortestPath;
 
 public static class Dijkstra
 {
-    public static IReadOnlyCollection<IEdge<TNode, TEdge>> ShortestPath<TNode, TEdge>(IGraph<TNode, TEdge> graph,
-        INode<TNode, TEdge> start, INode<TNode, TEdge> end, Func<TEdge, int> cost)
+    public static IReadOnlyCollection<IEdge<TNode, TEdge>> ShortestPath<TNode, TEdge, TCost>(IGraph<TNode, TEdge> graph,
+        INode<TNode, TEdge> start, INode<TNode, TEdge> end, Func<TCost, TEdge, TCost> cost, TCost initialCostForStartNode,
+        TCost initialCostForNonStartNodes)
+        where TCost : IComparable<TCost>
+
     {
-        var distances = new Dictionary<INode<TNode, TEdge>, int>(graph.Nodes.Count);
+        var distances = new Dictionary<INode<TNode, TEdge>, TCost>(graph.Nodes.Count);
         var remainingElements =
             new SortedSet<INode<TNode, TEdge>>(
                 Comparer<INode<TNode, TEdge>>.Create((x, y) =>
@@ -17,31 +21,31 @@ public static class Dijkstra
         {
             if (node.Equals(start))
             {
-                distances[node] = 0;
+                distances[node] = initialCostForStartNode;
                 remainingElements.Add(node);
             }
             else
             {
-                distances[node] = int.MaxValue;
+                distances[node] = initialCostForNonStartNodes;
                 remainingElements.Add(node);
             }
         }
 
         var previousEdges = new Dictionary<INode<TNode, TEdge>, IEdge<TNode, TEdge>?>(graph.Nodes.Count);
-        
+
         while (remainingElements.Count > 0)
         {
             var nearestNode = remainingElements.Min!;
             remainingElements.Remove(nearestNode);
             var currentDistance = distances[nearestNode];
-            
+
             var nextEdges = nearestNode.Edges.Where(edge => remainingElements.Contains(edge.NodeB));
-            
+
             foreach (var edge in nextEdges)
             {
-                var distanceToNeighbor = currentDistance + cost(edge.Value);
-                
-                if (distances[edge.NodeB] > distanceToNeighbor)
+                var distanceToNeighbor = cost(currentDistance, edge.Value);
+
+                if (distances[edge.NodeB].CompareTo(distanceToNeighbor) > 0)
                 {
                     remainingElements.Remove(edge.NodeB);
                     distances[edge.NodeB] = distanceToNeighbor;
@@ -50,7 +54,7 @@ public static class Dijkstra
                 }
             }
         }
-        
+
         var edges = new Stack<IEdge<TNode, TEdge>>();
 
         var lastEdge = previousEdges[end];

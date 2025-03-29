@@ -32,7 +32,7 @@ public static class Paths
 
                 return (
                     newPathAndLastTransition.NewPath.Add(MergeEdges(newPathAndLastTransition.LastEdge,
-                        newPathAndLastTransition.LastEdge)), edge, edge);
+                        newPathAndLastTransition.CurrentEdge)), edge, edge);
             });
 
         return newPath.Add(MergeEdges(lastEdge, currentEdge));

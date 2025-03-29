@@ -22,8 +22,8 @@ public static class PathFinder
     /// <returns>A list of edges that represent the path.</returns>
     public static IReadOnlyCollection<IEdge<TNode, TEdge>> FindShortestPath<TNode, TEdge>(IGraph<TNode, TEdge> graph,
         INode<TNode, TEdge> start, INode<TNode, TEdge> end, Func<TEdge, int> cost) =>
-        Dijkstra.ShortestPath(graph, start, end, cost);
-
+        Dijkstra.ShortestPath(graph, start, end, (currentCost, edge) => currentCost + cost(edge), 0, int.MaxValue);
+    
     /// <summary>
     /// Finds all possible paths of shortest duration from start to end.
     /// </summary>
@@ -41,4 +41,28 @@ public static class PathFinder
         where TNode : IEquatable<TNode> =>
         Ssmtspp.FindSingleSourceMultiObjectiveTemporalShortestPaths(graph, start, end,
             new LatestDepartureObjective<TNode, TEdge>());
+
+    /// <summary>
+    /// Finds the path to <paramref name="end"/> with the earliest arrival time starting in <paramref name="start"/> at
+    /// <paramref name="departureTime"/>..
+    /// </summary>
+    /// <param name="graph">The graph in which to search.</param>
+    /// <param name="start">The starting point.</param>
+    /// <param name="end">The end point.</param>
+    /// <param name="departureTime">The earliest departure time.</param>
+    /// <typeparam name="TNode">Type of node labels.</typeparam>
+    /// <typeparam name="TEdge">Type of edge labels.</typeparam>
+    /// <returns></returns>
+    public static IReadOnlyCollection<IEdge<TNode, TEdge>> FindEarliestArrivalPath<TNode, TEdge>(
+        IGraph<TNode, TEdge> graph,
+        INode<TNode, TEdge> start, INode<TNode, TEdge> end, DateTime departureTime) where TEdge : ITimedEdge
+        => Dijkstra.ShortestPath(graph, start, end, (currentCost, edge) =>
+        {
+            if (currentCost == TimeSpan.MaxValue || edge.DepartureTime < departureTime + currentCost)
+            {
+                return TimeSpan.MaxValue;
+            }
+
+            return edge.ArrivalTime - departureTime;
+        }, TimeSpan.Zero, TimeSpan.MaxValue);
 }
