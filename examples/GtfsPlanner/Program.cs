@@ -35,7 +35,7 @@ var display = new Display();
 earliestArrival.SetHandler((gtfsFile, date, start, destination, startTime) =>
 {
     var temporalGraph = gtfsImporter.ImportGraphFromGtfs(gtfsFile, date);
-
+    
     var startNode = temporalGraph.Nodes.First(node => node.Value.Name == start);
     var destinationNode = temporalGraph.Nodes.First(node => node.Value.Name == destination);
 

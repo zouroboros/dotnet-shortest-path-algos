@@ -1,4 +1,6 @@
-namespace Algorithm.Model;
+using System;
+
+namespace Graph;
 
 /// <summary>
 /// Interface for edge values that represent temporal edges.
