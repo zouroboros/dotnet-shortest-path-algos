@@ -1,10 +1,12 @@
+using System;
 using System.Linq;
 
 namespace Graph;
 
 public static class Graphs
 {
-    public static IGraph<IEdge<TNode, TEdge>, TNode> ToLineGraph<TNode, TEdge>(this IGraph<TNode, TEdge> graph)
+    public static IGraph<IEdge<TNode, TEdge>, TNode> ToLineGraph<TNode, TEdge>(this IGraph<TNode, TEdge> graph, 
+        Func<IEdge<TNode, TEdge>, INode<TNode, TEdge>, IEdge<TNode, TEdge>, bool>? edgeFilter = null)
     where TEdge : ITimedEdge
     {
         var graphBuilder = new GraphBuilder<IEdge<TNode, TEdge>, TNode>();
@@ -19,7 +21,10 @@ public static class Graphs
             {
                 var nodeForNextEdge = newNodeByEdge[nextEdge];
 
-                graphBuilder.CreateEdge(firstEdge.NodeB.Value, nodeForEdge, nodeForNextEdge);
+                if (edgeFilter is null || edgeFilter(firstEdge, firstEdge.NodeB, nextEdge))
+                {
+                    graphBuilder.CreateEdge(firstEdge.NodeB.Value, nodeForEdge, nodeForNextEdge);
+                }
             }
         }
 
