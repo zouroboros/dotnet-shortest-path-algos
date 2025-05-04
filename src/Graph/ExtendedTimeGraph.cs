@@ -56,4 +56,6 @@ public record ExtendedTimeGraph<TNode, TEdge>(IReadOnlyCollection<INode<(TNode L
 
     public IEnumerable<INode<(TNode Label, DateTime Time), TEdge>> GetNodesForBaseLabel(TNode baseLabel) =>
         _extendedNodesByBaseLabel[baseLabel];
+
+    public IEnumerable<IEdge<(TNode Label, DateTime Time), TEdge>> Edges => Nodes.AllEdges();
 }

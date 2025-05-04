@@ -5,30 +5,31 @@ namespace GtfsPlanner;
 
 public class Display
 {
-    public void DisplayPath(IReadOnlyCollection<IEdge<(string Id, string Name), TimedEdge<string>>> path)
+    public void DisplayPath<TNode>(IReadOnlyCollection<IEdge<TNode, TimedEdge<string>>> path, Func<TNode, string> nodeFormatter)
     {
-        var longestStationNameLength = LongestStationNameLength(path);
+        var longestStationNameLength = LongestStationNameLength(path, nodeFormatter);
         var longestViaName = LongestViaNameLength(path);
 
-        DisplayPath(path, longestStationNameLength, longestViaName);
+        DisplayPath(path, longestStationNameLength, longestViaName, nodeFormatter);
     }
 
-    public void DisplayPaths(
-        IReadOnlyCollection<IReadOnlyCollection<IEdge<(string Id, string Name), TimedEdge<string>>>> paths)
+    public void DisplayPaths<TNode>(
+        IReadOnlyCollection<IReadOnlyCollection<IEdge<TNode, TimedEdge<string>>>> paths, Func<TNode, string> nodeFormatter)
     {
-        var longestStationNameLength = paths.Max(LongestStationNameLength);
+        var longestStationNameLength = paths.Max(path => LongestStationNameLength(path, nodeFormatter));
         var longestViaName = paths.Max(LongestViaNameLength);
 
         foreach (var path in paths)
         {
-            DisplayPath(path, longestStationNameLength, longestViaName);
+            DisplayPath(path, longestStationNameLength, longestViaName, nodeFormatter);
         }
     }
 
-    private static void DisplayPath(IReadOnlyCollection<IEdge<(string Id, string Name), TimedEdge<string>>> path,
-        int longestStationNameLength, int longestViaName)
+    private static void DisplayPath<TNode>(IReadOnlyCollection<IEdge<TNode, TimedEdge<string>>> path,
+        int longestStationNameLength, int longestViaName,
+        Func<TNode, string> nodeFormatter)
     {
-        var simplifiedPath = Paths.MergeConsecutiveEdgesOnSameTrain(path);
+        var simplifiedPath = Paths.MergeConsecutiveEdgesOnSameTrain(path, nodeFormatter);
         var firstTransition = simplifiedPath.First();
         var lastTransition = simplifiedPath.Last();
 
@@ -49,12 +50,13 @@ public class Display
         }
     }
 
-    private static int LongestStationNameLength(
-        IReadOnlyCollection<IEdge<(string Id, string Name), TimedEdge<string>>> path) =>
-        Paths.SelectStationNames(path).Max(name => name.Length);
+    private static int LongestStationNameLength<TNode>(
+        IReadOnlyCollection<IEdge<TNode, TimedEdge<string>>> path,
+        Func<TNode, string> nodeFormatter) =>
+        Paths.SelectStationNames(path, nodeFormatter).Max(name => name.Length);
 
-    private static int LongestViaNameLength(
-        IReadOnlyCollection<IEdge<(string Id, string Name), TimedEdge<string>>> path) =>
+    private static int LongestViaNameLength<TNode>(
+        IReadOnlyCollection<IEdge<TNode, TimedEdge<string>>> path) =>
         Paths.SelectViaNames(path).Max(name => name.Length);
 
     public void DisplayCalculationTime(TimeSpan calculationTime)

@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Globalization;
 using Algorithm;
 using Graph;
-using GTFS;
 using GtfsPlanner;
 
 var rootCommand = new RootCommand("GtsPlanner");
@@ -29,6 +28,11 @@ var latestDepartureAndEarliestArrival = new Command("LatestDepartureEarliestArri
 
 rootCommand.Add(latestDepartureAndEarliestArrival);
 
+var earliestArrivalInExtendedGraph = new Command("EarliestArrivalInExtendedGraph");
+earliestArrivalInExtendedGraph.AddOption(departureTimeOption);
+
+rootCommand.Add(earliestArrivalInExtendedGraph);
+
 var gtfsImporter = new GtfsImporter();
 var display = new Display();
 
@@ -46,7 +50,7 @@ earliestArrival.SetHandler((gtfsFile, date, start, destination, startTime) =>
     stopwatch.Stop();
 
     display.DisplayCalculationTime(stopwatch.Elapsed);
-    display.DisplayPath(path);
+    display.DisplayPath(path, label => label.Name);
     
     
 }, gtfsOption, dateOption, startOption, endOption, departureTimeOption);
@@ -65,8 +69,29 @@ latestDepartureAndEarliestArrival.SetHandler((gtfsFile, date, start, destination
     stopwatch.Stop();
 
     display.DisplayCalculationTimeAndNumberOfResults(stopwatch.Elapsed, temporalPaths.Count);
-    display.DisplayPaths(temporalPaths);
+    display.DisplayPaths(temporalPaths, label => label.Name);
     
 }, gtfsOption, dateOption, startOption, endOption);
+
+earliestArrivalInExtendedGraph.SetHandler((gtfsFile, date, start, destination, startTime) =>
+{
+    var temporalGraph = gtfsImporter.ImportGraphFromGtfs(gtfsFile, date);
+    var lineGraph = temporalGraph.ToLineGraph();
+    
+    var startNode = temporalGraph.Nodes.First(node => node.Value.Name == start).Value;
+    var destinationNode = temporalGraph.Nodes.First(node => node.Value.Name == destination).Value;
+
+    var stopwatch = new Stopwatch();
+    stopwatch.Start();
+    var paths = PathFinder
+        .FindEarliestArrivalPaths(lineGraph, startNode, destinationNode, new DateTime(date, startTime))
+        .Select(edges => edges.ToArray()).ToArray();
+    stopwatch.Stop();
+
+    display.DisplayCalculationTimeAndNumberOfResults(stopwatch.Elapsed, paths.Length);
+    display.DisplayPaths(paths, label => label.Name);
+    
+    
+}, gtfsOption, dateOption, startOption, endOption, departureTimeOption);
 
 await rootCommand.InvokeAsync(args);
