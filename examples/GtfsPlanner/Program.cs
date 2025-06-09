@@ -3,7 +3,9 @@ using System.Diagnostics;
 using System.Globalization;
 using Algorithm;
 using Graph;
+using Graph.Mutable;
 using GtfsPlanner;
+using Graphs = GtfsPlanner.Graphs;
 
 var rootCommand = new RootCommand("GtsPlanner");
 var gtfsOption = new Option<FileInfo>("--gtfs", "Path to the GTFS file.");
@@ -76,7 +78,22 @@ latestDepartureAndEarliestArrival.SetHandler((gtfsFile, date, start, destination
 earliestArrivalInExtendedGraph.SetHandler((gtfsFile, date, start, destination, startTime) =>
 {
     var temporalGraph = gtfsImporter.ImportGraphFromGtfs(gtfsFile, date);
-    var lineGraph = temporalGraph.ToLineGraph();
+    var lineGraph = temporalGraph.ToLineGraph((incomingEdge, node, outgoingEdge) => node.Value.Name.Contains("Haupt") || outgoingEdge.Value.DepartureTime - incomingEdge.Value.ArrivalTime < TimeSpan.FromMinutes(30));
+
+    Console.WriteLine($"Total number of nodes in line graph {lineGraph.Nodes.Count} and edges {lineGraph.Edges.Count()}");
+    
+    var nodesWithOnlyOneEdge = lineGraph.Nodes.Where(node => node.Edges.Count(edge => edge.NodeA == node) <= 1);
+    
+    Console.WriteLine($"Number with at most one outgoing edge in line graph {nodesWithOnlyOneEdge.Count()}" );
+
+    var mutableGraph = MutableGraph.From(lineGraph,
+        new Func<(string Id, string Name), ICollection<(string Id, string Name)>>(value => [value]));
+    
+    Console.WriteLine($"Original graph: #Nodes {mutableGraph.Nodes.Count} #Edges {mutableGraph.Edges.Count()}");
+    
+    mutableGraph.Simplify();
+    
+    Console.WriteLine($"Simplified graph: #Nodes {mutableGraph.Nodes.Count} #Edges {mutableGraph.Edges.Count()}");
     
     var startNode = temporalGraph.Nodes.First(node => node.Value.Name == start).Value;
     var destinationNode = temporalGraph.Nodes.First(node => node.Value.Name == destination).Value;
