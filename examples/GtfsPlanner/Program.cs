@@ -83,14 +83,21 @@ earliestArrivalInLineGraph.SetHandler((gtfsFile, date, start, destination, start
     var stopwatch = new Stopwatch();
     stopwatch.Start();
     var paths = PathFinder
-        .FindEarliestArrivalPaths(lineGraph, startNode, destinationNode, new DateTime(date, startTime))
-        .Select(edges => edges.ToArray()).First();
+        .FindEarliestArrivalPathsForEachStart(lineGraph, startNode, destinationNode, new DateTime(date, startTime))
+        .Select(edges => edges.ToArray()).Take(7).ToArray();
     stopwatch.Stop();
 
     display.DisplayCalculationTimeAndNumberOfResults(stopwatch.Elapsed, paths.Length);
-    display.DisplayPath(paths, label => label.Name);
+    display.DisplayPaths(paths, label => label.Name);
     
-    
+    stopwatch.Restart();
+    var path2 = PathFinder
+        .FindEarliestArrivalPath(lineGraph, startNode, destinationNode, new DateTime(date, startTime))?
+        .ToArray() ?? [];
+    stopwatch.Stop();
+
+    display.DisplayCalculationTimeAndNumberOfResults(stopwatch.Elapsed, 1);
+    display.DisplayPath(path2, label => label.Name);
 }, gtfsOption, dateOption, startOption, endOption, departureTimeOption);
 
 await rootCommand.InvokeAsync(args);

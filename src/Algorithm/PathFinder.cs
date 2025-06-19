@@ -24,7 +24,7 @@ public static class PathFinder
         INode<TNode, TEdge> start, INode<TNode, TEdge> end, Func<TEdge, int> cost) =>
         Dijkstra.ShortestPath(graph, start, end, (currentCost, edge) => currentCost + cost(edge.Value), 0,
             int.MaxValue);
-    
+
     /// <summary>
     /// Finds all possible paths of shortest duration from start to end.
     /// </summary>
@@ -67,37 +67,74 @@ public static class PathFinder
             return edge.Value.ArrivalTime - departureTime;
         }, TimeSpan.Zero, TimeSpan.MaxValue);
 
-    public static IEnumerable<IEnumerable<IEdge<TNode, TEdge>>> FindEarliestArrivalPaths<TNode, TEdge>(IGraph<IEdge<TNode, TEdge>, TNode> lineGraph, TNode start,
+    public static IEnumerable<IEnumerable<IEdge<TNode, TEdge>>> FindEarliestArrivalPathsForEachStart<TNode, TEdge>(
+        IGraph<IEdge<TNode, TEdge>, TNode> lineGraph, TNode start,
         TNode end, DateTime departureTime) where TEdge : ITimedEdge, IEquatable<TEdge>
     {
         var startNodes = lineGraph.Nodes.Where(node =>
             Equals(node.Value.NodeA.Value, start) && node.Value.Value.DepartureTime >= departureTime);
-        var endNodes = lineGraph.Nodes.Where(node => Equals(node.Value.NodeB.Value, end)).ToArray();
         
+        var endNodes = lineGraph.Nodes.Where(node => Equals(node.Value.NodeB.Value, end))
+            .OrderBy(node => node.Value.Value.ArrivalTime).ToArray();
+
         foreach (var startNode in startNodes.OrderBy(startNode => startNode.Value.Value.DepartureTime))
         {
-            var labels = Dijkstra.LabelNodes(lineGraph, startNode, (currentCost, edge) =>
-            {
-                if (currentCost == TimeSpan.MaxValue ||
-                    edge.NodeB.Value.Value.DepartureTime < departureTime + currentCost)
+            var labels = Dijkstra.LabelNodes(lineGraph, (currentCost, edge) =>
                 {
-                    return TimeSpan.MaxValue;
-                }
-                
-                return edge.NodeB.Value.Value.ArrivalTime - departureTime;
-            }, TimeSpan.Zero, TimeSpan.MaxValue,
-                node => node.Value.Value.DepartureTime >= startNode.Value.Value.DepartureTime);
-            
-            foreach (var endNode in endNodes)
+                    if (currentCost == TimeSpan.MaxValue ||
+                        edge.NodeB.Value.Value.DepartureTime < departureTime + currentCost)
+                    {
+                        return TimeSpan.MaxValue;
+                    }
+
+                    return edge.NodeB.Value.Value.ArrivalTime - departureTime;
+                },
+                node => node == startNode ? TimeSpan.FromTicks(0) : TimeSpan.MaxValue,
+                node => node.Value.Value.DepartureTime >= startNode.Value.Value.DepartureTime,
+                node => Equals(node.Value.NodeB.Value, end));
+
+            var firstReachableNode = endNodes.FirstOrDefault(endNode => labels.ContainsKey(endNode));
+
+            if (firstReachableNode is not null)
             {
-                if (labels.ContainsKey(endNode))
-                {
-                    yield return Paths
-                        .EdgePathToNodePath(
-                            Dijkstra.ConstructPath<IEdge<TNode, TEdge>, TNode, TimeSpan>(endNode, labels))
-                        .Select(node => node.Value);
-                }
+                yield return Paths
+                    .EdgePathToNodePath(
+                        Dijkstra.ConstructPath<IEdge<TNode, TEdge>, TNode, TimeSpan>(firstReachableNode, labels))
+                    .Select(node => node.Value);
             }
         }
+    }
+
+    public static IEnumerable<IEdge<TNode, TEdge>>? FindEarliestArrivalPath<TNode, TEdge>(
+        IGraph<IEdge<TNode, TEdge>, TNode> lineGraph, TNode start,
+        TNode end, DateTime departureTime) where TEdge : ITimedEdge, IEquatable<TEdge>
+    {
+        var labels = Dijkstra.LabelNodes(lineGraph, (currentCost, edge) =>
+            {
+                if (currentCost == DateTime.MaxValue)
+                {
+                    return DateTime.MaxValue;
+                }
+
+                return edge.NodeB.Value.Value.ArrivalTime;
+            },
+            node => Equals(node.Value.NodeA.Value, start) && node.Value.Value.DepartureTime >= departureTime
+                ? node.Value.Value.DepartureTime
+                : DateTime.MaxValue,
+            node => node.Value.Value.DepartureTime >= departureTime,
+            node => Equals(node.Value.NodeB.Value, end));
+        
+        var firstReachableNode = lineGraph.Nodes.Where(node => Equals(node.Value.NodeB.Value, end))
+            .OrderBy(node => node.Value.Value.ArrivalTime).FirstOrDefault(endNode => labels.ContainsKey(endNode));
+
+        if (firstReachableNode is not null)
+        {
+            return Paths
+                .EdgePathToNodePath(
+                    Dijkstra.ConstructPath<IEdge<TNode, TEdge>, TNode, TimeSpan>(firstReachableNode, labels))
+                .Select(node => node.Value);
+        }
+        
+        return null;
     }
 }

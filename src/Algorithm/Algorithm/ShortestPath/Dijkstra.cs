@@ -10,7 +10,7 @@ public static class Dijkstra
         where TCost : IComparable<TCost>
 
     {
-        var previousEdges = LabelNodes(graph, start, cost, initialCostForStartNode, initialCostForNonStartNodes);
+        var previousEdges = LabelNodes(graph, cost, node => Equals(start, node) ? initialCostForStartNode : initialCostForNonStartNodes);
 
         return ConstructPath<TNode, TEdge, TCost>(end, previousEdges);
     }
@@ -33,9 +33,10 @@ public static class Dijkstra
     }
 
     public static Dictionary<INode<TNode, TEdge>, IEdge<TNode, TEdge>?> LabelNodes<TNode, TEdge, TCost>(
-        IGraph<TNode, TEdge> graph, INode<TNode, TEdge> start, Func<TCost, IEdge<TNode, TEdge>, TCost> cost,
-        TCost initialCostForStartNode, TCost initialCostForNonStartNodes,
-        Func<INode<TNode, TEdge>, bool>? nodeFilter = null) where TCost : IComparable<TCost>
+        IGraph<TNode, TEdge> graph, Func<TCost, IEdge<TNode, TEdge>, TCost> cost,
+        Func<INode<TNode, TEdge>, TCost> initialCost,
+        Func<INode<TNode, TEdge>, bool>? nodeFilter = null,
+        Func<INode<TNode, TEdge>, bool>? terminateHere = null) where TCost : IComparable<TCost>
     {
         var distances = new Dictionary<INode<TNode, TEdge>, TCost>(graph.Nodes.Count);
         var remainingElements =
@@ -47,16 +48,8 @@ public static class Dijkstra
         {
             if (nodeFilter is null || nodeFilter(node))
             {
-                if (node.Equals(start))
-                {
-                    distances[node] = initialCostForStartNode;
-                    remainingElements.Add(node);
-                }
-                else
-                {
-                    distances[node] = initialCostForNonStartNodes;
-                    remainingElements.Add(node);
-                }
+                distances[node] = initialCost(node);
+                remainingElements.Add(node);
             }
         }
 
@@ -80,6 +73,11 @@ public static class Dijkstra
                     distances[edge.NodeB] = distanceToNeighbor;
                     remainingElements.Add(edge.NodeB);
                     previousEdges[edge.NodeB] = edge;
+
+                    if (terminateHere is not null && terminateHere(nearestNode))
+                    {
+                        return previousEdges;
+                    }
                 }
             }
         }
